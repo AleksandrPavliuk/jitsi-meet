@@ -11,6 +11,7 @@ import { MEDIA_TYPE } from '../base/media';
 import { getParticipants } from '../base/participants';
 import { reportError } from '../base/util';
 import { shouldDisplayTileView } from '../video-layout';
+import { getTrackByMediaTypeAndParticipant } from '../base/tracks';
 
 import {
     SELECT_LARGE_VIDEO_PARTICIPANT,
@@ -22,6 +23,108 @@ import {
  *
  * @returns {Function}
  */
+
+export function captureLargeVideoScreenshotOld() {
+    return (dispatch: Dispatch<any>, getState: Function): Promise<Object> => {
+        const state = getState();
+        const largeVideo = state['features/large-video'];
+
+        if (!largeVideo) {
+            return Promise.resolve();
+        }
+        const tracks = state['features/base/tracks'];
+        const { jitsiTrack } = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.VIDEO, largeVideo.participantId);
+        
+        const videoStream = jitsiTrack.getOriginalStream();
+        // Create a HTML canvas and draw video from the track on to the canvas.
+        const [ track ] = videoStream.getVideoTracks();
+        // const { height, width } = track.getSettings() ?? track.getConstraints();
+        const { height, width } = track.getConstraints();
+        const canvasElement = document.createElement('canvas');
+        debugger;
+        const ctx = canvasElement.getContext('2d');
+        const videoElement = document.createElement('video');
+        console.log("heere5")
+        
+        videoElement.height = parseInt(height, 10);
+        videoElement.width = parseInt(width, 10);
+        videoElement.autoplay = true;
+        videoElement.srcObject = videoStream;
+        canvasElement.height = videoElement.height;
+        canvasElement.width = videoElement.width;
+
+        // Wait for the video to load before drawing on to the canvas.
+        const promise = new Promise(resolve => {
+            videoElement.onloadeddata = () => resolve();
+        });
+
+        return promise.then(() => {
+            ctx.drawImage(videoElement, 0, 0, videoElement.width, videoElement.height);
+            const dataURL = canvasElement.toDataURL('image/png', 1.0);
+
+            // Cleanup.
+            ctx.clearRect(0, 0, videoElement.width, videoElement.height);
+            videoElement.srcObject = null;
+            canvasElement.remove();
+            videoElement.remove();
+
+            return Promise.resolve(dataURL);
+        });
+    };
+}
+export function captureLargeVideoScreenshot() {
+    return (dispatch: Dispatch<any>, getState: Function): Promise<string> => {
+        const state = getState();
+        const largeVideo = state['features/large-video'];
+        const promise = Promise.resolve();
+
+        if (!largeVideo) {
+            return promise;
+        }
+        const tracks = state['features/base/tracks'];
+        const participantTrack = getTrackByMediaTypeAndParticipant(tracks, MEDIA_TYPE.VIDEO, largeVideo.participantId);
+
+        // Participants that join the call video muted do not have a jitsiTrack attached.
+        if (!(participantTrack && participantTrack.jitsiTrack)) {
+            return promise;
+        }
+
+       
+        const videoStream = participantTrack.jitsiTrack.getOriginalStream();
+
+        if (!videoStream) {
+            return promise;
+        }
+
+        // Get the video element for the large video, cast HTMLElement to HTMLVideoElement to make flow happy.
+        /* eslint-disable-next-line no-extra-parens*/
+        const videoElement = ((document.getElementById('largeVideo'): any): HTMLVideoElement);
+
+        if (!videoElement) {
+            console.log('state', document.getElementById('largeVideo'))
+            return promise;
+        }
+
+        // Create a HTML canvas and draw video on to the canvas.
+        const [ track ] = videoStream.getVideoTracks();
+        const { height, width } = track.getSettings() ?? track.getConstraints();
+        const canvasElement = document.createElement('canvas');
+        const ctx = canvasElement.getContext('2d');
+
+        canvasElement.style.display = 'none';
+        canvasElement.height = parseInt(height, 10);
+        canvasElement.width = parseInt(width, 10);
+        ctx.drawImage(videoElement, 0, 0);
+        const dataURL = canvasElement.toDataURL('image/png', 1.0);
+
+        // Cleanup.
+        ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasElement.remove();
+
+        return Promise.resolve(dataURL);
+    };
+}
+
 export function selectParticipant() {
     return (dispatch: Dispatch<any>, getState: Function) => {
         const state = getState();

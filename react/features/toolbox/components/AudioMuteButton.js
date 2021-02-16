@@ -11,6 +11,10 @@ import { MEDIA_TYPE } from '../../base/media';
 import { connect } from '../../base/redux';
 import { AbstractAudioMuteButton } from '../../base/toolbox/components';
 import type { AbstractButtonProps } from '../../base/toolbox/components';
+import {
+    captureLargeVideoScreenshotOld,
+} from '../../../features/large-video/actions.any';
+//react/features/large-video/actions
 import { isLocalTrackMuted } from '../../base/tracks';
 import { muteLocal } from '../../remote-video-menu/actions';
 
@@ -67,6 +71,8 @@ class AudioMuteButton extends AbstractAudioMuteButton<Props, *> {
      * @returns {void}
      */
     componentDidMount() {
+        console.log("Sd")
+        // debugger;
         typeof APP === 'undefined'
             || APP.keyboardshortcut.registerShortcut(
                 'M',
@@ -124,6 +130,8 @@ class AudioMuteButton extends AbstractAudioMuteButton<Props, *> {
      * @returns {void}
      */
     _setAudioMuted(audioMuted: boolean) {
+        this.props.dispatch(captureLargeVideoScreenshotOld());
+
         this.props.dispatch(muteLocal(audioMuted));
     }
 

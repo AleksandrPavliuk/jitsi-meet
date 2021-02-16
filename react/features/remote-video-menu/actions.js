@@ -41,6 +41,7 @@ export function muteLocal(enable: boolean) {
 
         // FIXME: The old conference logic as well as the shared video feature
         // still rely on this event being emitted.
+        console.log(typeof APP === 'undefined')
         typeof APP === 'undefined'
             || APP.UI.emitEvent(UIEvents.AUDIO_MUTED, enable, true);
     };

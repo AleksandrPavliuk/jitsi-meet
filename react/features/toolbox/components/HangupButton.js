@@ -2,6 +2,7 @@
 
 import _ from 'lodash';
 
+import { Alert } from 'react-native';
 import { createToolbarEvent, sendAnalytics } from '../../analytics';
 import { appNavigate } from '../../app/actions';
 import { disconnect } from '../../base/connection';
@@ -42,12 +43,25 @@ class HangupButton extends AbstractHangupButton<Props, *> {
     constructor(props: Props) {
         super(props);
 
-        this._hangup = _.once(() => {
+        this._hangup = (() => {
             sendAnalytics(createToolbarEvent('hangup'));
 
             // FIXME: these should be unified.
             if (navigator.product === 'ReactNative') {
-                this.props.dispatch(appNavigate(undefined));
+                Alert.alert(
+                    'Do you really want to end the call?',
+                    '',
+                    [
+                        {
+                            text: 'Cancel',
+                            style: 'cancel'
+                          },
+                          { 
+                              text: 'OK', 
+                              onPress: () => this.props.dispatch(appNavigate(undefined)) 
+                            }
+                    ],
+                    { cancelable: false });
             } else {
                 this.props.dispatch(disconnect(true));
             }
